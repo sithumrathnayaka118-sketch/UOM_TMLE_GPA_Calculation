@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UoM GPA Calculator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #76170A, #EAB818);
+      background-attachment: fixed;
+      color: #002147;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: #002147;
+      color: white;
+      text-align: center;
+      padding: 20px 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    header img {
+      height: 80px;
+      display: block;
+      margin: 0 auto 10px auto;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: bold;
+      color: #EAB818;
+    }
+    h2 {
+      font-size: 18px;
+      margin-top: 5px;
+      color: #fff;
+      font-weight: normal;
+    }
+
+    /* Container */
+    .container {
+      background: rgba(255,255,255,0.96);
+      width: 90%;
+      max-width: 1100px;
+      margin: 25px auto;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0px 8px 24px rgba(0,0,0,0.3);
+    }
+
+    select, button {
+      padding: 10px;
+      margin: 10px 5px;
+      font-size: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #76170A;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover { background: #EAB818; color: #002147; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th {
+      background: #002147;
+      color: #EAB818;
+      padding: 10px;
+    }
+    td {
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    .result {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #76170A;
+    }
+
+    .saved-gpas {
+      margin-top: 25px;
+      padding: 15px;
+      background: #fdf7eb;
+      border-radius: 8px;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+    }
+    .saved-gpas h3 { 
+      margin-bottom: 10px; 
+      color: #002147; 
+    }
+    .saved-gpas ul { list-style: none; }
+    .saved-gpas li {
+      margin: 5px 0;
+      padding: 6px 10px;
+      background: white;
+      border-left: 5px solid #EAB818;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .overall {
+      margin-top: 15px;
+      font-size: 20px;
+      color: #002147;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://upload.wikimedia.org/wikipedia/en/6/60/University_of_Moratuwa_logo.png" alt="UoM Logo">
+    <h1>University of Moratuwa</h1>
+    <h2>BSc (Hons) in Transport Management & Logistics Engineering</h2>
+  </header>
+
+  <div class="container">
+    <label for="semester">Select Semester:</label>
+    <select id="semester" onchange="loadSubjects()">
+      <option value="">-- Select --</option>
+      <option value="1">Semester 1</option>
+      <option value="2">Semester 2</option>
+      <option value="3">Semester 3</option>
+      <option value="4">Semester 4</option>
+      <option value="5">Semester 5</option>
+      <option value="6">Semester 6</option>
+      <option value="7">Semester 7</option>
+      <option value="8">Semester 8</option>
+    </select>
+
+    <div id="subjectsTable"></div>
+    <button onclick="calculateGPA()">Calculate GPA</button>
+    <button onclick="saveGPA()">Save GPA</button>
+    <div class="result" id="gpaResult"></div>
+
+    <div class="saved-gpas">
+      <h3>Saved Semester GPAs:</h3>
+      <ul id="savedList"></ul>
+      <div class="overall" id="overallGPA"></div>
+    </div>
+  </div>
+
+  <script>
+    const gradePoints = {
+      "A+": 4.0, "A": 4.0, "A-": 3.7,
+      "B+": 3.3, "B": 3.0, "B-": 2.7,
+      "C+": 2.3, "C": 2.0, "C-": 1.5,
+      "D": 1.0, "F": 0.0, "I-we": 0.0, "I-ca": 0.0
+    };
+
+    const semesterSubjects = {
+      1: [
+        {name: "MA1014 Mathematics", credits: 3},
+        {name: "CS1033 Programming Fundamentals", credits: 3},
+        {name: "CE1033 Fluid Mechanics", credits: 2},
+        {name: "LT1010 Fundamentals of Transport & Logistics Systems", credits: 3},
+        {name: "LT1020 Mechanics in Transport", credits: 3},
+        {name: "EE1040 Electrical Fundamentals", credits: 2},
+        {name: "EL1030 Language Skills Enhancement (S1,S2)", credits: 2}
+      ],
+      2: [
+        {name: "MA1024 Methods of Mathematics", credits: 3},
+        {name: "EN1803 Basic Electronics", credits: 3},
+        {name: "CS2813 Visual Programming", credits: 2},
+        {name: "LT1030 Operations Research", credits: 3},
+        {name: "LT1040 Geo-Spatial Analysis", credits: 2},
+        {name: "LT1050 Systems Engineering", credits: 3},
+        {name: "EL1030 Language Skills Enhancement (S1,S2)", credits: 1},
+        {name: "HM-I Humanities Elective I", credits: 2}
+      ],
+      3: [
+        {name: "LT2010 Data Science for Transport & Logistics", credits: 4},
+        {name: "LT2020 Engineering Economics", credits: 3},
+        {name: "LT2030 Operations Engineering", credits: 2},
+        {name: "LT2040 Quantitative Methods for Transport & Logistics", credits: 4},
+        {name: "LT2050 Principles of Supply Chain Engineering", credits: 3},
+        {name: "LT2060 Global Logistics Systems", credits: 2},
+        {name: "LT1900 Essential Skills Development (S2,S3)", credits: 2}
+      ],
+      4: [
+        {name: "LT2070 Sustainable Design of Transport & Logistics", credits: 2},
+        {name: "LT2080 Land Transport Systems", credits: 3},
+        {name: "LT2090 Maritime Transport Systems", credits: 3},
+        {name: "LT2100 Air Transport Systems", credits: 3},
+        {name: "LT2110 Transport Demand Modelling & Simulation", credits: 3},
+        {name: "LT2120 Supply Chain Analytics", credits: 2},
+        {name: "LT2210 System Dynamics", credits: 3},
+        {name: "LT2220 Quality Management in Engineering", credits: 2},
+        {name: "LT2230 Advanced Operations Research", credits: 3}
+      ],
+      5: [
+        {name: "LT3010 Principles of Management, Accounting & Finance", credits: 3},
+        {name: "LT3020 Supply Chain Design", credits: 3},
+        {name: "LT3030 Safety & Security in Mobility Systems", credits: 2},
+        {name: "LT3040 Design of Mobility Systems", credits: 5},
+        {name: "LT3050 Planning & Design of Transport & Logistics Facilities", credits: 3},
+        {name: "LT3850 Engineer and Society (S5,S6)", credits: 1}
+      ],
+      6: [
+        {name: "LT4200 Research Project (S6,S7,S8)", credits: 4},
+        {name: "LT4560 Integrated Capstone Design Project", credits: 4},
+        {name: "LT3070 Entrepreneurship & Business Management", credits: 2},
+        {name: "LT3900 Research Methodologies", credits: 2},
+        {name: "LT3850 Engineer and Society (S5,S6)", credits: 1},
+        {name: "HM-2 Humanities Elective II", credits: 2}
+      ],
+      7: [
+        { name: "LT4200 — Research Project (S6,S7,S8)", credits: 2 },
+        { name: "LT4560 — Integrated Capstone Design Project (S6,S7,S8)", credits: 3 },
+        { name: "LT4010 — Marketing & Managerial Skills for Engineers", credits: 3 },
+        { name: "LT4020 — Project Management & Appraisal", credits: 2 },
+        { name: "LT4030 — Contract Management & Human Resources", credits: 2 },
+        { name: "LT4210 — Railway Operations Planning", credits: 3 },
+        { name: "LT4220 — Big Data Analytics for Mobility Decisions", credits: 3 },
+        { name: "LT4230 — Inventory Operations & Warehouse Design", credits: 2 },
+        { name: "LT4240 — Design of Urban Logistics", credits: 3 },
+        { name: "LT4250 — Manufacturing & Service Operations Management", credits: 3 },
+        { name: "LT4260 — Design of Public Transport Operations", credits: 3 },
+        { name: "LT4270 — Artificial Intelligence for Supply Chains", credits: 3 },
+        { name: "LT4280 — Project Formulation & Procurement", credits: 2 },
+        { name: "LT4290 — Applications of Robotics & Automation in T&L", credits: 3 },
+        { name: "LT4300 — Shipping Logistics", credits: 3 },
+        { name: "LT4400 — Aerodrome Planning & Operations", credits: 3 }
+      ],
+      8: [
+        { name: "LT4200 — Research Project (S6,S7,S8)", credits: 2 },
+        { name: "LT4560 — Integrated Capstone Design Project (S6,S7,S8)", credits: 3 },
+        { name: "LT4040 — Smart Technologies for Transport & Logistics Systems", credits: 3 },
+        { name: "LT4310 — Smart Cities & Mobility", credits: 3 },
+        { name: "LT4320 — Analytics for Procurement", credits: 3 },
+        { name: "LT4330 — Network Science for Mobility Systems", credits: 3 },
+        { name: "LT4340 — Design & Operation of Ports", credits: 3 },
+        { name: "LT4350 — Aviation Logistics", credits: 3 },
+        { name: "LT4360 — Disruptive Vehicular Technologies", credits: 3 },
+        { name: "LT4370 — Disaster & Humanitarian Logistics", credits: 3 },
+        { name: "LT4380 — Risk Management in Transport & Logistics", credits: 3 },
+        { name: "LT4390 — Intelligent Mobility Systems", credits: 3 },
+        { name: "LT4410 — Aviation Technology & Operations", credits: 3 }
+      ]
+    };
+
+    function loadSubjects() {
+      const sem = document.getElementById("semester").value;
+      const container = document.getElementById("subjectsTable");
+      container.innerHTML = "";
+      if (!sem) return;
+      let html = `<table><tr><th>Subject</th><th>Credits</th><th>Grade</th></tr>`;
+      semesterSubjects[sem].forEach((sub, i) => {
+        html += `<tr>
+          <td>${sub.name}</td>
+          <td>${sub.credits}</td>
+          <td>
+            <select id="grade-${i}">
+              <option value="">--</option>
+              ${Object.keys(gradePoints).map(g => `<option value="${g}">${g}</option>`).join("")}
+            </select>
+          </td>
+        </tr>`;
+      });
+      html += `</table>`;
+      container.innerHTML = html;
+      document.getElementById("gpaResult").innerText = "";
+    }
+
+    let lastGPA = null;
+    function calculateGPA() {
+      const sem = document.getElementById("semester").value;
+      if (!sem) return;
+      let totalCredits = 0, totalPoints = 0;
+      semesterSubjects[sem].forEach((sub, i) => {
+        const grade = document.getElementById(`grade-${i}`).value;
+        if (grade && gradePoints[grade] !== undefined) {
+          totalCredits += sub.credits;
+          totalPoints += gradePoints[grade] * sub.credits;
+        }
+      });
+      if (totalCredits === 0) {
+        document.getElementById("gpaResult").innerText = "Please select grades!";
+        return;
+      }
+      const gpa = (totalPoints / totalCredits).toFixed(2);
+      lastGPA = gpa;
+      document.getElementById("gpaResult").innerText = `Semester GPA: ${gpa}`;
+    }
+
+    const savedGPAs = {};
+    function saveGPA() {
+      const sem = document.getElementById("semester").value;
+      if (!sem || !lastGPA) return;
+      savedGPAs[sem] = parseFloat(lastGPA);
+      updateSavedList();
+    }
+    function updateSavedList() {
+      const list = document.getElementById("savedList");
+      list.innerHTML = "";
+      let total = 0, count = 0;
+      for (const sem in savedGPAs) {
+        const li = document.createElement("li");
+        li.innerText = `Semester ${sem}: GPA ${savedGPAs[sem]}`;
+        list.appendChild(li);
+        total += savedGPAs[sem];
+        count++;
+      }
+      document.getElementById("overallGPA").innerText = 
+        count > 0 ? `Overall GPA: ${(total / count).toFixed(2)}` : "";
+    }
+  </script>
+</body>
+</html>
